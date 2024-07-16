@@ -28,7 +28,7 @@
 
 Экран состояния фаззера:
 
-![fuzzer](/img_for_README/fuzzer.jpg)
+![fuzzer](/img_for_README/fuzz.png)
 
 ## [Распараллеленный фаззинг](https://github.com/google/AFL/blob/master/docs/parallel_fuzzing.txt)
 
@@ -49,6 +49,29 @@ afl-fuzz -i testcase_dir -o sync_dir -S fuzzer03 [...other stuff...]
 
 Во время выполнения фаззер мутирует входные данные (корпус) для бОльшего покрытия программы. Зная особенности формата файла `*.tiff` можно написать свой ``mutator`` и запустить с ним фаззер.
 
+### Формат .TIFF
+
+Структура файла с форматом .tiff состоит из:
+
+1. Заголовка файла изображения - Image File Header (IFH).
+
+2. Каталога файлов изображений - Image File Directory (IFD).
+
+3. Записи в каталоге -  Directory Entry (DE).
+
+В начале файла находится header, его поля - это тег, версия файла и смещение от начала файла до первого каталога файлов изображений.
+
+Поля IFH - это число, обозначающее общее количество записей в этом каталоге, эти самые записи, смещение от начала файла до следующего IFH.
+
+Одна запись DE содержит в себе тег и тип атрибута, длина данных этого типа, и смещение хранилища значений атрибута.
+
+После header и до первого IFH находится Image data, которая хранит данные изображения.
+
+Мутация состоит в следующем - определить смещение первого IFH, и изменить Image data. 
+
+
+### Запуск фаззера с кастомным мутатором
+
 Файл `mutator.с` с измененными функциями компилируем в динамический разделяемый объектный файл при помощи команды:
 ```
 gcc -shared -Wall -O3 mutator.c -o mutator.so
@@ -58,9 +81,11 @@ gcc -shared -Wall -O3 mutator.c -o mutator.so
 
 Экран состояния с использованием кастомного мутатора и встроеного:
 
-![cust_internal](/img_for_README/cast_plus_internal.jpg)
+![cust](/img_for_README/cust.png)
 
 # Результаты
+Заранее в команду была определенна переменная AFL_MAP_SIZE=65536 для того, чтобы размера bitmap был одинаковый во всех случаях.
+  
 Если сравнивать результаты тестирования фаззера с импользованием дефолтного встроеного мутатора и его же с кастомным мутатором, то видно, что кол-во `crashes` увеличилось. Эффективность тестирования возросла, это может использоваться в работе.
 
 
@@ -68,4 +93,4 @@ gcc -shared -Wall -O3 mutator.c -o mutator.so
 1. AFL: https://github.com/google/AFL.git.
 2. AFLplusplus: https://github.com/AFLplusplus/AFLplusplus.git.
 3. greybox-фаззинг: https://habr.com/ru/company/bizone/blog/570312/ и https://habr.com/ru/company/bizone/blog/570534/.
-4. Detailed TIFF image file formet: https://programmersought.com/article/25991320372/.
+4. Detailed TIFF image file format: https://programmersought.com/article/25991320372/.
