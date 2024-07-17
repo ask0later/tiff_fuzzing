@@ -49,8 +49,9 @@ CXX = /home/ask0later/AFL__/AFL/afl-g++
 #-------------------------------------------------------
 
 # Files which do not necessarily require external libraries to run.
-FILES = scene3d \
-	image2ascii \
+FILES = target \
+        # scene3d \
+	# image2ascii \
 	# CImg_demo \
         # captcha \
         # curve_editor2d \
