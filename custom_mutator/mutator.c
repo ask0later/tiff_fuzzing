@@ -1,6 +1,6 @@
 
-#include "../../../AFL__/AFLplusplus/include/afl-fuzz.h"
-#include <X11/X.h>
+#include "../../../AFL__/AFLplusplus/include/afl-fuzz.h" // TODO Такой инклюд (относительный) не сработает у других людей, лучше прописать иклюд директорию через -I при компиляции
+#include <X11/X.h> // Зачем нужен этот хэдер?
 #include <stdlib.h>
 
 #define DATA_SIZE 8388607
@@ -11,11 +11,11 @@ typedef struct my_custom_mutator
         afl_state_t *afl;
 
         // any additional data here!
-        size_t trim_size_current;
-        int    trimmming_steps;
-        int    cur_step;
-
-  u8 *mutated_out, *post_process_buf, *trim_buf;
+        size_t trim_size_current; // FIXME У тебя не определен кастомный трим, но у тебя есть соответствующие поля в структуре
+        int    trimmming_steps;   // При этом на буффер ты даже выделяешь память
+        int    cur_step;	  // Все, связанное с тримом, убрать 
+						
+  u8 *mutated_out, *post_process_buf, *trim_buf; // Также ты не используешь post_process_buf, но выделяешь на него память
 } my_custom_mutator_t;
 
 typedef struct 
@@ -159,13 +159,13 @@ size_t mutate_tiff_file(unsigned char * buffer, size_t mutated_size)
 
         size_t offset = hdr->tiff_diroff <= mutated_size ? hdr->tiff_diroff : mutated_size;
 
-        RANDOM_IF(buffer[0] = 0x49, buffer[0] = 0x4d)
+        RANDOM_IF(buffer[0] = 0x49, buffer[0] = 0x4d) // FIXME А если mutated_size < 4?
         RANDOM_IF(buffer[1] = 0x49, buffer[1] = 0x4d)
 
         RANDOM_IF(buffer[2] = 0x00, buffer[2] = 0x2a)
         RANDOM_IF(buffer[3] = 0x00, buffer[3] = 0x2a)
 
-        RANDOM_IF(, unsigned int tmp = rand(); memcpy(buffer + 4, (unsigned char*) &tmp, 4))
+        RANDOM_IF(, unsigned int tmp = rand(); memcpy(buffer + 4, (unsigned char*) &tmp, 4)) // FIXME!!! UB Срочно убрать / заменить на безопасный вариант
 
         // from sizeof(TIFF_IFH) to offset -- pixel image data
         RANDOM_IF(, for (size_t i = sizeof(TIFF_IFH); i < offset; i++){buffer[i] &= (rand() % 255);})
@@ -176,15 +176,15 @@ size_t mutate_tiff_file(unsigned char * buffer, size_t mutated_size)
 
 
 
-        if (offset + DE_count * sizeof(TIFF_DE) + 6 <= mutated_size)
+        if (offset + DE_count * sizeof(TIFF_DE) + 6 <= mutated_size) // TODO Магические константы
         {
                 RANDOM_IF(first_IFD->DE_count = (unsigned short) rand(), )
 
-                TIFF_DE* current = (TIFF_DE*) (buffer + offset + 2);
+                TIFF_DE* current = (TIFF_DE*) (buffer + offset + 2); // TODO Магические константы
 
                 for (size_t DE_index = 0; DE_index < DE_count; DE_index++)
                 {
-                        if (current->tag == 0x0100 || current->tag == 0x0101)
+                        if (current->tag == 0x0100 || current->tag == 0x0101) // TODO Магические константы, все смещения лучше указывать через sizeof, либо добавлять пометки / заводить переменные
                         {
                                 current->type = 0x03;
                                 current->length = 0x1;
@@ -208,7 +208,7 @@ size_t mutate_tiff_file(unsigned char * buffer, size_t mutated_size)
 
         
 
-        
+        // TODO Пофикси кодстайл. Если будет интересно, то можешь разобраться с clang-format и использовать его
 
         return offset;
 }
