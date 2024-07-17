@@ -3,7 +3,7 @@
 #include <X11/X.h>
 #include <stdlib.h>
 
-#define DATA_SIZE 100
+#define DATA_SIZE 8388607
 #define RANDOM_IF(code_1, code_2) if (rand() % 2) {code_1;} else {code_2;}
 
 typedef struct my_custom_mutator
@@ -174,6 +174,8 @@ size_t mutate_tiff_file(unsigned char * buffer, size_t mutated_size)
         TIFF_IFD* first_IFD = (TIFF_IFD*) (buffer + offset);
         size_t DE_count = first_IFD->DE_count;
 
+
+
         if (offset + DE_count * sizeof(TIFF_DE) + 6 <= mutated_size)
         {
                 RANDOM_IF(first_IFD->DE_count = (unsigned short) rand(), )
@@ -182,6 +184,13 @@ size_t mutate_tiff_file(unsigned char * buffer, size_t mutated_size)
 
                 for (size_t DE_index = 0; DE_index < DE_count; DE_index++)
                 {
+                        if (current->tag == 0x0100 || current->tag == 0x0101)
+                        {
+                                current->type = 0x03;
+                                current->length = 0x1;
+                                current->value_offset = rand();
+                                continue;
+                        }
                         RANDOM_IF(current->tag          = rand(),)
                         RANDOM_IF(current->type         = rand(),)
                         RANDOM_IF(current->length       = rand(),)
@@ -196,6 +205,8 @@ size_t mutate_tiff_file(unsigned char * buffer, size_t mutated_size)
                         buffer[i] &= (rand() % 255);
                 }
         }
+
+        
 
         
 
