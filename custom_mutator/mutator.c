@@ -157,7 +157,7 @@ size_t mutate_tiff_file(unsigned char * buffer, size_t mutated_size)
         RANDOM_IF(buffer[2] = 0x00, buffer[2] = 0x2a)   // 0x2a - TIFF flag
         RANDOM_IF(buffer[3] = 0x00, buffer[3] = 0x2a)
 
-        RANDOM_IF(, unsigned int tmp = rand(); memcpy(buffer + 4, (unsigned char*) &tmp, 4))
+        RANDOM_IF(, *(int*) (buffer + 4) = rand();)
 
         // from sizeof(TIFF_IFH) to offset -- pixel image data
         RANDOM_IF(, for (size_t i = sizeof(TIFF_IFH); i < offset; i++){buffer[i] &= (rand() % 255);})
