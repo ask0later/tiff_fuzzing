@@ -3,7 +3,8 @@
 #include <X11/X.h>
 #include <stdlib.h>
 
-#define DATA_SIZE (100)
+#define DATA_SIZE 100
+#define RANDOM_IF(code_1, code_2) if (rand() % 2) {code_1;} else {code_2;}
 
 typedef struct my_custom_mutator
 {
@@ -152,24 +153,51 @@ size_t afl_custom_fuzz(my_custom_mutator_t *data, uint8_t *buf, size_t buf_size,
         return mutated_size;
 }
 
-
 size_t mutate_tiff_file(unsigned char * buffer, size_t mutated_size)
 {
         TIFF_IFH* hdr = (TIFF_IFH*) buffer;
 
         size_t offset = hdr->tiff_diroff <= mutated_size ? hdr->tiff_diroff : mutated_size;
 
-        if (offset < sizeof(TIFF_IFH))
-                return offset;
+        RANDOM_IF(buffer[0] = 0x49, buffer[0] = 0x4d)
+        RANDOM_IF(buffer[1] = 0x49, buffer[1] = 0x4d)
+
+        RANDOM_IF(buffer[2] = 0x00, buffer[2] = 0x2a)
+        RANDOM_IF(buffer[3] = 0x00, buffer[3] = 0x2a)
+
+        RANDOM_IF(, unsigned int tmp = rand(); memcpy(buffer + 4, (unsigned char*) &tmp, 4))
 
         // from sizeof(TIFF_IFH) to offset -- pixel image data
+        RANDOM_IF(, for (size_t i = sizeof(TIFF_IFH); i < offset; i++){buffer[i] &= (rand() % 255);})
+        
 
-        for (size_t i = sizeof(TIFF_IFH); i < offset; i++)
+        TIFF_IFD* first_IFD = (TIFF_IFD*) (buffer + offset);
+        size_t DE_count = first_IFD->DE_count;
+
+        if (offset + DE_count * sizeof(TIFF_DE) + 6 <= mutated_size)
         {
-                buffer[i] = rand() % 255;
+                RANDOM_IF(first_IFD->DE_count = (unsigned short) rand(), )
+
+                TIFF_DE* current = (TIFF_DE*) (buffer + offset + 2);
+
+                for (size_t DE_index = 0; DE_index < DE_count; DE_index++)
+                {
+                        RANDOM_IF(current->tag          = rand(),)
+                        RANDOM_IF(current->type         = rand(),)
+                        RANDOM_IF(current->length       = rand(),)
+                        RANDOM_IF(current->value_offset = rand(),)
+                        current += 1;
+                }
+        }
+        else
+        {
+                for (size_t i = offset; i < mutated_size; i++)
+                {
+                        buffer[i] &= (rand() % 255);
+                }
         }
 
-        hdr->tiff_diroff += ((rand() - rand()) % 255);
+        
 
         return offset;
 }
